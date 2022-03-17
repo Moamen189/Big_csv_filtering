@@ -47,13 +47,6 @@ class filter(Thread):
             if(chunk is self.SENTINEL ):
                 break
 
-
-
-
-
-
-
-
 def main():
     SENTINEL = object()
     # read bad words csv
