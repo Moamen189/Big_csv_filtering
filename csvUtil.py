@@ -1,9 +1,6 @@
-from hashlib import new
 from queue import Queue
 from threading import *
-from unittest.mock import sentinel
 import pandas as pd 
-from enum import Enum    
 
 class CsvReaderAsync(Thread):
     def __init__(self, q, filename, SENTINEL):
