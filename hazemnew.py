@@ -11,8 +11,8 @@ class CsvReaderAsync(Thread):
         self.SENTINEL = SENTINEL
 
     def read(self):
-        chunksize = 10 ** 3
-        with pd.read_csv(self.filename, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1") as reader:
+        chunksize = 10 **3
+        with pd.read_csv(self.filename, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1",header=None) as reader:
             for chunk in reader:
                 self.q.put(chunk)
         self.q.put(self.SENTINEL)
@@ -21,17 +21,23 @@ class CsvReaderAsync(Thread):
         self.read()
 
 def FilterBadWords(chunk,badwords):
-    badWordsList=badwords["header"].to_list()
-    badWordsRegex = re.compile('|'.join(re.escape(x) for x in badWordsList))
+    badWordsList=badwords.values.tolist()
+    badWordsRegex = re.compile('|'.join(re.escape(x[0]) for x in badWordsList))
+
+    if(type(chunk)==(object)):
+        return 0
+
     for record in chunk.iterrows():
         recordunhealthy=False
-        if re.match(badWordsRegex , record[1].EMAIL) != None:
+        if re.match(badWordsRegex , record[1].iloc[0]) != None:
             recordunhealthy=True
 
         if recordunhealthy:
-            print(record[1].EMAIL , "            Unhealthy")
+            print(record[1].iloc[0] , "            Unhealthy")
+
         else:
-            print(record[1].EMAIL, "            Healthy")
+            print(record[1].iloc[0], "            Healthy")
+
 
 # another implementation for FilterBadWords function
 #     def FilterBadWords(chunk, badwords):
@@ -50,7 +56,7 @@ def FilterBadWords(chunk,badwords):
 def main():
     SENTINEL = object()
     # read bad words csv
-    badwords = pd.read_csv("./badWords.csv")
+    badwords = pd.read_csv("./badWords.csv",header=None)
     q = Queue()
     csv_reader = CsvReaderAsync(q, "./ofile.csv", SENTINEL)
     csv_reader.start()
