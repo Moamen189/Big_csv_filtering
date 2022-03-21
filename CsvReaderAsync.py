@@ -1,5 +1,7 @@
 from threading import *
-import pandas as pd 
+import pandas as pd
+import time
+
 
 class CsvReaderAsync(Thread):
     def __init__(self, onReadChunk, onFinishReading, filename):
@@ -7,13 +9,26 @@ class CsvReaderAsync(Thread):
         self.onReadChunk = onReadChunk
         self.onFinishReading=onFinishReading
         self.filename=filename
-        
     def read(self):
-        chunksize=10**3
-        with pd.read_csv(self.filename,na_filter=False, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1") as reader:
+
+        chunksize=10**7
+        # start = time.time()
+        with pd.read_csv(self.filename,na_filter=False, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1", low_memory ="False" , nrows=800000) as reader:
+            start = time.time()
+
             for chunk in reader:
+
+                # end = time.time()
                 self.onReadChunk(chunk)
+
+                # start = time.time()
+            end = time.time()
+            readTime = end - start
+            print(f'Finished Read within  {readTime}')
+
+
         self.onFinishReading()
+
 
     def run(self):
         self.read()
