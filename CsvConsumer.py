@@ -8,8 +8,9 @@ class CsvConsumer(Thread):
     def consume(self):
         while (True):
             data = self.q.get()
+            print("after cosume redord")
             self.process(data)
             if (data is self.SENTINEL):
-                break
+                return 0
     def run(self):
         self.consume()

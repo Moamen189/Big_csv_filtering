@@ -11,9 +11,9 @@ class CsvReaderAsync(Thread):
         self.filename=filename
     def read(self):
 
-        chunksize=10**7
-        # start = time.time()
-        with pd.read_csv(self.filename,na_filter=False, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1", low_memory ="False" , nrows=800000) as reader:
+        chunksize=10**3*5
+        start = time.time()
+        with pd.read_csv(self.filename,na_filter=False, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1", nrows=10000 ) as reader:
             start = time.time()
 
             for chunk in reader:
@@ -25,9 +25,9 @@ class CsvReaderAsync(Thread):
             end = time.time()
             readTime = end - start
             print(f'Finished Read within  {readTime}')
+            self.onFinishReading()
 
 
-        self.onFinishReading()
 
 
     def run(self):
