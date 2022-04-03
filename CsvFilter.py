@@ -1,4 +1,7 @@
 import re
+import time
+import pandas as pd
+import numpy as np
 
 class CsvFilter:
 
@@ -12,11 +15,23 @@ class CsvFilter:
 
     def FilterWords(self,chunk):
         if(type(chunk)==(object)):
+            self.onMatch(chunk)
+            self.onFailure(chunk)
             return 0
+        print("start")
+        df = chunk[chunk.apply(lambda record:self.badWordsRegex.search(record[1]) != None or self.badWordsRegex.search(record[3]) != None or self.badWordsRegex.search(record[5]) != None, raw = True, axis=1)]
 
-        for index,record in chunk.iterrows():
+        chunk= (pd.merge(chunk,df, indicator=True, how='outer')
+            .query('_merge=="left_only"')
+            .drop('_merge', axis=1))
+        self.onMatch(df)
+        self.onFailure(chunk)
+        
+                
+                
+        """ for index,record in chunk.iterrows():
             recordunhealthy=False
-            if re.search(self.badWordsRegex , record[0]) != None or re.search(self.badWordsRegex , record[2]) != None or re.search(self.badWordsRegex , record[4]) != None:
+            if self.badWordsRegex.search(record[0]) != None or self.badWordsRegex.search(record[2]) != None or self.badWordsRegex.search(record[4]) != None:
                 recordunhealthy=True
 
                 
@@ -24,4 +39,6 @@ class CsvFilter:
                 self.onMatch(record)
             else:
                 self.onFailure(record)
-           
+        end = time.time()
+        readTime = end - start
+        print(f'Finished Read within  {readTime}') """

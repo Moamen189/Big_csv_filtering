@@ -18,8 +18,6 @@ def onReadChunk(chunk):
 def onFinishReading():
     print("done")
     ReaderQueue.put(SENTINEL)
-    WriterHealthyQueue.put(SENTINEL)
-    WriterUnhealthyQueue.put(SENTINEL)
 def onFilterMatch(record):
     #print("UNHEALTHY")
     WriterUnhealthyQueue.put(record)
@@ -35,8 +33,7 @@ def consume(data):
 
 def main():
 
-    csv_filter = CsvFilter(onFilterMatch, onFilterFailure, badwords)
-    csv_reader =  CsvReaderAsync(onReadChunk,onFinishReading, "./2.csv")
+    csv_reader =  CsvReaderAsync(onReadChunk,onFinishReading, "./hussein2.csv")
     csv_reader.start()
     csv_healthy_writer = CsvWriter(WriterHealthyQueue,"./healthy.csv",SENTINEL)
     csv_unhealthy_writer = CsvWriter(WriterUnhealthyQueue,"./unhealthy.csv",SENTINEL)

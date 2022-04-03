@@ -1,6 +1,9 @@
+import string
 from threading import *
 import pandas as pd
 import time
+
+from pyparsing import Char
 
 
 class CsvReaderAsync(Thread):
@@ -11,20 +14,16 @@ class CsvReaderAsync(Thread):
         self.filename=filename
     def read(self):
 
-        chunksize=10**3*5
+        chunksize=(10**4)
         start = time.time()
-        with pd.read_csv(self.filename,na_filter=False, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1", nrows=10000 ) as reader:
-            start = time.time()
+        with pd.read_csv(self.filename,na_filter=False, on_bad_lines='skip', chunksize=chunksize, encoding="ISO-8859-1",
+         dtype='unicode', low_memory = False ) as reader:
 
             for chunk in reader:
-
                 # end = time.time()
+                print("first")
                 self.onReadChunk(chunk)
-
                 # start = time.time()
-            end = time.time()
-            readTime = end - start
-            print(f'Finished Read within  {readTime}')
             self.onFinishReading()
 
 
