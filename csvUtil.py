@@ -20,10 +20,16 @@ def onFinishReading():
     ReaderQueue.put(SENTINEL)
 def onFilterMatch(record):
     #print("UNHEALTHY")
-    WriterUnhealthyQueue.put(record)
+    if(type(record)!=object):
+        list(map(WriterUnhealthyQueue.put,record))
+    else:
+        WriterUnhealthyQueue.put(record)
 def onFilterFailure(record):
     #print (record)
-    WriterHealthyQueue.put(record)
+    if(type(record)!=object):
+        list(map(WriterHealthyQueue.put,record))
+    else:
+        WriterHealthyQueue.put(record)
     #print("after healthy record")
 
 csv_filter = CsvFilter(onFilterMatch, onFilterFailure, badwords)
@@ -33,7 +39,7 @@ def consume(data):
 
 def main():
 
-    csv_reader =  CsvReaderAsync(onReadChunk,onFinishReading, "./hussein2.csv")
+    csv_reader =  CsvReaderAsync(onReadChunk,onFinishReading, "./Hussien1.csv")
     csv_reader.start()
     csv_healthy_writer = CsvWriter(WriterHealthyQueue,"./healthy.csv",SENTINEL)
     csv_unhealthy_writer = CsvWriter(WriterUnhealthyQueue,"./unhealthy.csv",SENTINEL)
