@@ -1,44 +1,53 @@
-import re
-import time
+from queue import Queue
+from CsvReaderAsync import CsvReaderAsync
+from CsvWriter import CsvWriter
+from CsvFilter import CsvFilter
+from CsvConsumer import CsvConsumer
 import pandas as pd
-import numpy as np
 
-class CsvFilter:
+SENTINEL = object()
+SENTINELWriter = object()
+ReaderQueue =  Queue(10)
+WriterHealthyQueue = Queue(10)
+WriterUnhealthyQueue = Queue(10)
+badwords = pd.read_csv("./badWords.csv", header=None)
 
-    def __init__(self, onMatch, onFailure, word_list):
-        self.onMatch=onMatch
-        self.onFailure=onFailure
-        self.word_list=word_list
-        badWordsList= self.word_list.values.tolist()
-        self.badWordsRegex = re.compile('|'.join(re.escape(x[0]) for x in badWordsList),re.IGNORECASE)
-        #print(self.badWordsRegex)
 
-    def FilterWords(self,chunk):
-        if(type(chunk)==(object)):
-            self.onMatch(chunk)
-            self.onFailure(chunk)
-            return 0
-        print("start")
-        df = chunk[chunk.apply(lambda record:self.badWordsRegex.search(record[1]) != None or self.badWordsRegex.search(record[3]) != None or self.badWordsRegex.search(record[5]) != None, raw = True, axis=1)]
+def onReadChunk(chunk):
+    ReaderQueue.put(chunk)
+def onFinishReading():
+    print("done")
+    ReaderQueue.put(SENTINEL)
+def onFilterMatch(record):
+    #print("UNHEALTHY")
+    if(type(record)!=object):
+        list(map(WriterUnhealthyQueue.put,record))
+    else:
+        WriterUnhealthyQueue.put(record)
+def onFilterFailure(record):
+    #print (record)
+    if(type(record)!=object):
+        list(map(WriterHealthyQueue.put,record))
+    else:
+        WriterHealthyQueue.put(record)
+    #print("after healthy record")
 
-        chunk= (pd.merge(chunk,df, indicator=True, how='outer')
-            .query('_merge=="left_only"')
-            .drop('_merge', axis=1))
-        self.onMatch(df)
-        self.onFailure(chunk)
-        
-                
-                
-        """ for index,record in chunk.iterrows():
-            recordunhealthy=False
-            if self.badWordsRegex.search(record[0]) != None or self.badWordsRegex.search(record[2]) != None or self.badWordsRegex.search(record[4]) != None:
-                recordunhealthy=True
+csv_filter = CsvFilter(onFilterMatch, onFilterFailure, badwords)
 
-                
-            if recordunhealthy:
-                self.onMatch(record)
-            else:
-                self.onFailure(record)
-        end = time.time()
-        readTime = end - start
-        print(f'Finished Read within  {readTime}') """
+def consume(data):
+    csv_filter.FilterWords(data)
+
+def main():
+
+    csv_reader =  CsvReaderAsync(onReadChunk,onFinishReading, "./Hussien1.csv")
+    csv_reader.start()
+    csv_healthy_writer = CsvWriter(WriterHealthyQueue,"./healthy.csv",SENTINEL)
+    csv_unhealthy_writer = CsvWriter(WriterUnhealthyQueue,"./unhealthy.csv",SENTINEL)
+    csv_unhealthy_writer.start()
+    csv_healthy_writer.start()
+    csv_consumer = CsvConsumer(ReaderQueue, consume, SENTINEL)
+    csv_consumer.start()
+
+    #print("all done")
+if __name__ == '__main__':
+    main()
