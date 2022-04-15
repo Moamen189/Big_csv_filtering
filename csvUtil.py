@@ -12,7 +12,7 @@ WriterHealthyQueue = Queue(10)
 WriterUnhealthyQueue = Queue(10)
 badwords = pd.read_csv("./badWords.csv", header=None)
 
-
+############################################################
 def onReadChunk(chunk):
     ReaderQueue.put(chunk)
 def onFinishReading():
