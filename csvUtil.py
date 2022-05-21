@@ -3,15 +3,22 @@ from CsvReaderAsync import CsvReaderAsync
 from CsvWriter import CsvWriter
 from CsvFilter import CsvFilter
 from CsvConsumer import CsvConsumer
+import os
 import pandas as pd
+from enum import Enum
+import time
+from pathlib import Path
+
+
+
 
 SENTINEL = object()
 SENTINELWriter = object()
 ReaderQueue =  Queue(10)
 WriterHealthyQueue = Queue(10)
 WriterUnhealthyQueue = Queue(10)
-badwords = pd.read_csv("./badWords.csv", header=None)
-
+path = Path(os.getcwd())
+badwords = pd.read_csv(os.join(path.parent.absolute(),"badWords.csv"), header=None)
 ############################################################
 def onReadChunk(chunk):
     ReaderQueue.put(chunk)
@@ -34,20 +41,33 @@ def onFilterFailure(record):
 
 csv_filter = CsvFilter(onFilterMatch, onFilterFailure, badwords)
 
-def consume(data):
-    csv_filter.FilterWords(data)
+def consume(data,queue_size):
+    csv_filter.FilterWords(data,queue_size)
 
-def main():
 
-    csv_reader =  CsvReaderAsync(onReadChunk,onFinishReading, "./Hussien1.csv")
+
+def main(i, chunk_size, rows_per_queue):
+    sharedDict = {}
+    print(i)
+    csv_reader =  CsvReaderAsync(onReadChunk,onFinishReading, os.join(path.parent.absolute(),"2.csv"), chunk_size, sharedDict)
     csv_reader.start()
-    csv_healthy_writer = CsvWriter(WriterHealthyQueue,"./healthy.csv",SENTINEL)
-    csv_unhealthy_writer = CsvWriter(WriterUnhealthyQueue,"./unhealthy.csv",SENTINEL)
+    csv_healthy_writer = CsvWriter(WriterHealthyQueue,os.join(os.getcwd("healthy.csv")),SENTINEL, sharedDict)
+    csv_unhealthy_writer = CsvWriter(WriterUnhealthyQueue,os.join(os.getcwd("unhealthy.csv")),SENTINEL, sharedDict)
     csv_unhealthy_writer.start()
     csv_healthy_writer.start()
-    csv_consumer = CsvConsumer(ReaderQueue, consume, SENTINEL)
+    csv_consumer = CsvConsumer(ReaderQueue, consume, SENTINEL, sharedDict,rows_per_queue)
     csv_consumer.start()
-
-    #print("all done")
-if __name__ == '__main__':
-    main()
+    ##logToXLSX({'type':'read','value':3.5},2)
+    csv_reader.join()
+    csv_unhealthy_writer.join()
+    csv_healthy_writer.join()
+    csv_consumer.join()
+    
+    print('read_time ',sharedDict['read'])
+    print('write_time ', sharedDict['write'])
+    print("process", sharedDict['process'])
+    return (sharedDict['read'], sharedDict['write'], sharedDict['process'])
+    sharedDict={}
+    ReaderQueue.queue.clear()
+    WriterHealthyQueue.queue.clear()
+    WriterUnhealthyQueue.queue.clear()
