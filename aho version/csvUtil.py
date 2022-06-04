@@ -19,7 +19,7 @@ WriterHealthyQueue = Queue(10)
 WriterUnhealthyQueue = Queue(10)
 path = Path(os.getcwd())
 badwords = pd.read_csv(os.join(path.parent.absolute(),"badWords.csv"), header=None)
-############################################################
+####################################################################################
 def onReadChunk(chunk):
     ReaderQueue.put(chunk)
 def onFinishReading():
